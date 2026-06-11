@@ -6,6 +6,8 @@
 ![requests](https://img.shields.io/badge/requests-2.31+-2B5B84?style=flat-square)
 ![LLMs](https://img.shields.io/badge/LLMs-OpenAI%20%7C%20Anthropic%20%7C%20Gemini%20%7C%20Ollama-FF8C42?style=flat-square)
 
+<img width="600" height="370" alt="-c4FdaGxKTw5sZ5fPFmVfFPmVU63dJi_63z-R2jzTcp4D-Rs-ZqMzc531AgqNjmI0YwOBm3cXrHFY4VD0VzOsOKT3cYejHk6EY38mCGsmzpSLOu3UOnmw50Sxn-qAWwAsGXi6LrLKHyEVAeYrdhFOA" src="https://github.com/user-attachments/assets/6587bd35-c19e-48e6-890d-280e65c1aded" />
+
 Chat with two (or more) LLMs **side by side**, with the same conversation, and
 compare their answers as they **stream in live**. Each model is driven by a
 small, editable block of Python — so you can wire up ChatGPT, Claude, Gemini, a
