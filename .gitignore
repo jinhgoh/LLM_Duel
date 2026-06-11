@@ -32,8 +32,8 @@ htmlcov/
 llm_duel_config.json
 
 # ── Tooling / editors ───────────────────────────────────────────
-# machine-local Claude Code settings (launch.json stays tracked)
-.claude/settings.local.json
+# Claude Code settings
+.claude/
 .vscode/
 .idea/
 *.swp
@@ -58,3 +58,6 @@ _docx_preview.pdf
 # LLM_Duel_Manual.pdf
 # LLM_Duel_Manual.docx
 # assets/
+
+# ── other ───────────────────────────────────────────────────────
+.claude/
