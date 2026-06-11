@@ -133,8 +133,10 @@ def capture_screens():
                 areas = page.locator('[data-testid="stTextArea"] textarea')
                 areas.nth(1).click()
                 areas.nth(1).fill(ANALYZER_CODE)
-                # Scope to the main area — the sidebar now holds API-key inputs.
-                names = page.locator('[data-testid="stMain"] [data-testid="stTextInput"] input')
+                # The panel title boxes are the only inputs labelled "Display
+                # name" (sidebar inputs carry their own labels), and the label
+                # survives label_visibility="collapsed" as an aria-label.
+                names = page.get_by_label("Display name")
                 names.nth(0).fill("Echo model")
                 names.nth(1).fill("Analyzer model")
             except Exception as exc:
