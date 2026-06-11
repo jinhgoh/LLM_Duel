@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LLM Duel — User Manual</title>
+<style>
+  :root { --accent:#5b4bdb; --ink:#1f2330; --muted:#6b7280; --line:#e5e7eb; --code-bg:#f6f7fb; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink); font-size: 11pt; line-height: 1.55; margin: 0;
+  }
+  h1, h2, h3 { line-height: 1.25; }
+  h2 {
+    font-size: 16pt; margin: 26px 0 10px; padding-bottom: 5px;
+    border-bottom: 2px solid var(--line); color: var(--ink);
+  }
+  h2 .num { color: var(--accent); font-weight: 800; margin-right: 8px; }
+  h3 { font-size: 12.5pt; margin: 16px 0 4px; }
+  p { margin: 8px 0; }
+  a { color: var(--accent); text-decoration: none; }
+  code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 9.5pt;
+         background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 8px;
+        padding: 12px 14px; overflow: auto; margin: 10px 0; }
+  pre code { background: none; padding: 0; font-size: 9pt; line-height: 1.45; }
+
+  /* Cover header */
+  .cover { border-left: 6px solid var(--accent); padding: 6px 0 6px 18px; margin-bottom: 6px; }
+  .cover .badge { display:inline-block; background: linear-gradient(135deg,#ff7a45,#ff5a36);
+    color:#fff; font-weight:800; letter-spacing:.5px; padding:4px 9px; border-radius:7px; font-size:12pt; }
+  .cover h1 { font-size: 28pt; margin: 10px 0 2px; }
+  .cover .sub { color: var(--muted); font-size: 12pt; margin: 0; }
+  .cover .meta { color: var(--muted); font-size: 9.5pt; margin-top: 8px; }
+
+  /* Figures */
+  figure { margin: 14px 0 18px; break-inside: avoid; text-align:center; }
+  figure img { width: 100%; border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+  figcaption { color: var(--muted); font-size: 9pt; font-style: italic; margin-top: 6px; }
+
+  /* Contract table */
+  table { border-collapse: collapse; width: 100%; margin: 10px 0; font-size: 10pt; }
+  th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: var(--code-bg); }
+  td.k { white-space: nowrap; font-family: ui-monospace, Consolas, monospace; color: var(--accent); }
+
+  .callout { background: #fff8e6; border: 1px solid #f3e0a6; border-radius: 8px;
+    padding: 10px 14px; margin: 12px 0; font-size: 10pt; }
+  .callout.sec { background:#fdecea; border-color:#f4b8ad; }
+  ul { margin: 6px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+  .lead { font-size: 11.5pt; }
+  section { break-inside: auto; }
+  .avoid { break-inside: avoid; }
+</style>
+</head>
+<body>
+
+  <div class="cover">
+    <span class="badge">VS</span>
+    <h1>LLM Duel</h1>
+    <p class="sub">User Manual — run one prompt against two LLMs, side by side.</p>
+    <p class="meta">Streamlit application · June 2026</p>
+  </div>
+
+  <section>
+    <h2><span class="num">1</span>What it is</h2>
+    <p class="lead">LLM Duel lets you hold the <strong>same conversation</strong> with two (or more)
+    language models at once and watch their answers <strong>stream in side by side</strong>. Each model is
+    driven by a small block of Python you can edit in the app, so you can wire up ChatGPT, Claude, Gemini,
+    a local model, or your own — without the app needing to know how any of them work.</p>
+    <figure>
+      <img src="assets/01_overview.png" alt="App overview">
+      <figcaption>The main window: settings sidebar (left), two model panels each with an editable code box,
+      and a shared message box at the bottom.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2><span class="num">2</span>Install &amp; run</h2>
+    <p>You need Python with Streamlit installed. From the project folder:</p>
+    <pre><code>pip install -r requirements.txt
+copy .env.example .env      # then paste in your API keys (optional)</code></pre>
+    <p>Then start it in any of these ways:</p>
+    <ul>
+      <li><strong>Double-click <code>run.bat</code></strong> — the quickest way.</li>
+      <li>Or run <code>streamlit run app.py</code> in a terminal.</li>
+    </ul>
+    <p>Your browser opens at <code>http://localhost:8501</code>. It works immediately with the built-in
+    <strong>Echo</strong> template — no API keys required — so you can try the interface right away.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">3</span>The interface</h2>
+    <h3>Sidebar (Settings)</h3>
+    <ul>
+      <li><strong>Panels</strong> — compare 2, 3, or 4 models at once.</li>
+      <li><strong>Clear all chats</strong> — wipe every conversation and start fresh.</li>
+      <li><strong>Save / Load / Download JSON</strong> — store your panel names + code to
+      <code>llm_duel_config.json</code> so your setup survives a restart.</li>
+    </ul>
+    <h3>Each model panel</h3>
+    <ul>
+      <li><strong>Display name</strong> — label the panel (e.g. “GPT-4o”, “Claude”).</li>
+      <li><strong>⚙️ Code</strong> — an editable Python box plus a template menu. It opens automatically
+      and collapses once the conversation starts, to keep the focus on the chat.</li>
+      <li><strong>Transcript</strong> — the running conversation for that model.</li>
+    </ul>
+    <h3>Message box</h3>
+    <p>Type once at the bottom; your message goes to <em>every</em> panel at the same time.</p>
+  </section>
+
+  <section>
+    <h2><span class="num">4</span>How it works — the contract</h2>
+    <p>The clever part is a tiny, fixed contract that every panel's code follows. That single convention is
+    what lets one app drive any model:</p>
+    <table class="avoid">
+      <tr><th>Direction</th><th>Name</th><th>What it is</th></tr>
+      <tr><td>in</td><td class="k">prompt</td><td>The latest user message (a string).</td></tr>
+      <tr><td>in</td><td class="k">messages</td><td>The full conversation so far —
+        a list of <code>{"role", "content"}</code> dictionaries.</td></tr>
+      <tr><td>out</td><td class="k">response</td><td>Either a plain <strong>string</strong> (shown at once),
+        <strong>or</strong> a <strong>generator that yields text chunks</strong> (streamed live).</td></tr>
+    </table>
+    <p>Pick a starting point from the template menu — <strong>OpenAI, Anthropic, Gemini, a local model
+    (Ollama), or Echo</strong> — then edit it. A real example (OpenAI, streaming, multi-turn):</p>
+    <pre><code>import os
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+stream = client.chat.completions.create(
+    model="gpt-4o",
+    messages=messages,        # full history, so it remembers the conversation
+    stream=True,
+)
+
+def gen():
+    for event in stream:
+        if event.choices[0].delta.content:
+            yield event.choices[0].delta.content
+
+response = gen()              # a generator -> streamed token by token</code></pre>
+    <figure>
+      <img src="assets/02_templates.png" alt="Template menu">
+      <figcaption>The template menu in each panel — a ready-made starting point for each provider.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2><span class="num">5</span>Using it — a worked example</h2>
+    <ol>
+      <li>In each panel, pick a template from the <strong>⚙️ Code</strong> menu and adjust the model name.</li>
+      <li>Put your API keys in a <code>.env</code> file (see section 8).</li>
+      <li>Type a question in the message box and press Enter.</li>
+      <li>Watch both answers stream in, then compare. Ask a follow-up — each model remembers its own thread.</li>
+    </ol>
+    <p>Below, two panels were given different code (a plain echo vs. a small text analyzer) so you can see how
+    distinct each side's answer can be. The <code>⏱</code> stamp under a reply shows how long it took.</p>
+    <figure>
+      <img src="assets/03_chat.png" alt="Side-by-side conversation">
+      <figcaption>Same question, two panels, two answers — streamed live and shown side by side.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2><span class="num">6</span>Installing model packages (Terminal)</h2>
+    <p>Different models need different Python packages. The built-in <strong>🔧 Terminal</strong> panel runs
+    commands in the <em>same</em> interpreter the app uses, so anything you <code>pip install</code> there is
+    immediately importable by your panel code.</p>
+    <pre><code>pip install openai anthropic google-generativeai</code></pre>
+    <figure>
+      <img src="assets/05_terminal.png" alt="Terminal panel">
+      <figcaption>The Terminal panel running a command and showing its output and exit code.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2><span class="num">7</span>Saving setups &amp; API keys</h2>
+    <p>Use <strong>Save</strong> in the sidebar to write your panel names and code to
+    <code>llm_duel_config.json</code>; it loads automatically next time. <strong>Download JSON</strong>
+    gives you a portable copy.</p>
+    <p>API keys live in a <code>.env</code> file beside <code>app.py</code> and are read by your panel code via
+    <code>os.environ</code>:</p>
+    <pre><code>OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_API_KEY=...</code></pre>
+  </section>
+
+  <section class="avoid">
+    <h2><span class="num">8</span>Security &amp; troubleshooting</h2>
+    <div class="callout sec"><strong>Security:</strong> panels run with <code>exec()</code> and the Terminal
+    runs shell commands — full power, by design, so any SDK works. Only paste code you trust. This is built as
+    a local, single-user tool.</div>
+    <ul>
+      <li><strong>Browser didn't open:</strong> go to <code>http://localhost:8501</code> manually.</li>
+      <li><strong><code>ModuleNotFoundError</code> in a panel:</strong> install the package from the Terminal
+      panel, e.g. <code>pip install openai</code>.</li>
+      <li><strong>Authentication error:</strong> check the matching key in <code>.env</code>, then restart the app.</li>
+      <li><strong>“model not found”:</strong> edit the <code>model="..."</code> line in that panel's code.</li>
+      <li><strong>One panel is slow:</strong> that's just that model — panels stream independently and in parallel.</li>
+    </ul>
+  </section>
+
+</body>
+</html>

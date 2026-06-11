@@ -1,0 +1,10 @@
+# Core app
+streamlit>=1.30
+python-dotenv>=1.0
+requests>=2.31
+
+# LLM SDKs are optional — install only the ones you compare.
+# You can also install these from the in-app Terminal panel.
+# openai>=1.0
+# anthropic>=0.39
+# google-genai>=0.3                 # both Gemini templates (chat + File Search)
