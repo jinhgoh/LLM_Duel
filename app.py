@@ -16,7 +16,7 @@ The contract each panel's code follows:
                     or a generator that yields text chunks (streamed live)
 
 Extras on top: per-panel templates, a Terminal to `pip install`, save/load
-your setup, and 2-4 panels. Streaming is genuinely concurrent (each panel
+your setup, and 1-4 panels. Streaming is genuinely concurrent (each panel
 runs in its own thread feeding a queue; the main thread paints them all).
 
 Run with:  streamlit run app.py
@@ -216,7 +216,6 @@ def history(i: int) -> list:
 def clear_chats() -> None:
     for i in range(MAX_PANELS):
         st.session_state[f"history_{i}"] = []
-    st.session_state["show_code"] = True  # fresh start: show the editors again
 
 
 # --------------------------------------------------------------------------- #
@@ -248,6 +247,28 @@ def _producer(code: str, prompt: str, messages: list, q: "queue.Queue") -> None:
         q.put(("error", traceback.format_exc()))
     finally:
         q.put(("done", None))
+
+
+def format_response(text: str) -> str:
+    """If the whole reply is a JSON object/array, pretty-print it in a ```json
+    block. Otherwise return it unchanged. A code fence around the JSON (e.g.
+    ```json ... ```) is tolerated. Scalars ("42", "true") are left as-is."""
+    stripped = text.strip()
+    candidate = stripped
+    if candidate.startswith("```"):
+        # drop opening fence (```json / ```), keep the body, drop trailing fence
+        body = candidate.split("\n", 1)[1] if "\n" in candidate else ""
+        candidate = body.rsplit("```", 1)[0].strip() if body.endswith("```") else body.strip()
+    if not candidate or candidate[0] not in "{[":
+        return text
+    try:
+        parsed = json.loads(candidate)
+    except (ValueError, TypeError):
+        return text
+    if not isinstance(parsed, (dict, list)):
+        return text
+    pretty = json.dumps(parsed, indent=2, ensure_ascii=False)
+    return f"```json\n{pretty}\n```"
 
 
 def apply_secrets() -> None:
@@ -306,7 +327,7 @@ def run_stream(placeholders: dict, prompt: str) -> None:
         if errors[i]:
             content = f"⚠️ **Error**\n```\n{errors[i]}\n```"
         else:
-            content = texts[i] or "(empty response)"
+            content = format_response(texts[i]) if texts[i] else "(empty response)"
         placeholders[i].markdown(content)
         history(i).append(
             {"role": "assistant", "content": content, "elapsed": round(elapsed[i], 2)}
@@ -349,7 +370,7 @@ def current_config() -> dict:
 
 def apply_config(cfg: dict) -> None:
     panels = cfg.get("panels", [])
-    st.session_state["num_panels"] = max(2, min(MAX_PANELS, len(panels) or 2))
+    st.session_state["num_panels"] = max(1, min(MAX_PANELS, len(panels) or 1))
     for i, panel in enumerate(panels[:MAX_PANELS]):
         st.session_state[f"name_{i}"] = panel.get("name", f"Model {i + 1}")
         st.session_state[f"code_{i}"] = panel.get("code", DEFAULT_CODE)
@@ -387,6 +408,7 @@ def init_state() -> None:
         st.session_state[f"name_{i}"] = f"Model {i + 1}"
         st.session_state[f"code_{i}"] = DEFAULT_CODE
         st.session_state[f"history_{i}"] = []
+        st.session_state[f"send_{i}"] = True   # panel receives prompts by default
     for key in SECRET_KEYS:             # pre-fill from any existing environment value
         st.session_state[f"secret_{key}"] = os.environ.get(key, "")
     if os.path.exists(CONFIG_PATH):
@@ -419,7 +441,7 @@ if st.session_state.get("_toast"):
 
 with st.sidebar:
     st.header("⚙️ Settings")
-    st.number_input("Panels", min_value=2, max_value=MAX_PANELS, step=1, key="num_panels")
+    st.number_input("Panels", min_value=1, max_value=MAX_PANELS, step=1, key="num_panels")
     st.toggle("⚙️ Show all code editors", key="show_code")
     st.button("🗑 Clear all chats", on_click=clear_chats, use_container_width=True)
 
@@ -476,11 +498,18 @@ st.caption("Same conversation, side-by-side answers — streamed live. Edit each
 
 # Reading chat_input early lets us update history before rendering transcripts.
 # (The widget itself still pins to the bottom of the page.)
-user_msg = st.chat_input("Message all panels…")
+# Which panels are checked to receive prompts (reads state from the checkboxes,
+# which persist across reruns even though they're rendered further down).
+targets = [i for i in range(n) if st.session_state.get(f"send_{i}", True)]
+
+user_msg = st.chat_input("Message the selected panels…")
+if user_msg and not targets:
+    st.session_state["_toast"] = "No panels selected — check 📨 on at least one panel."
+    user_msg = None
 pending = bool(user_msg)
 if pending:
-    first_message = all(not history(i) for i in range(n))
-    for i in range(n):
+    first_message = all(not history(i) for i in targets)
+    for i in targets:
         history(i).append({"role": "user", "content": user_msg})
     if first_message:
         # The sidebar toggle is already rendered this run; flip it on the next
@@ -488,11 +517,16 @@ if pending:
         st.session_state["_collapse_code_next"] = True
 
 # ----- Panels ---------------------------------------------------------------
+# The chat_input is pinned to the bottom of the page; when the code editors are
+# collapsed the columns are short, leaving a gap above it. Grow the chat area to
+# fill that space when editors are hidden.
+chat_height = 460 if st.session_state["show_code"] else 640
 columns = st.columns(n)
 placeholders = {}
 for i, column in enumerate(columns):
     with column:
         st.text_input("Display name", key=f"name_{i}", label_visibility="collapsed")
+        st.checkbox("📨 Receive prompts", key=f"send_{i}")
         with st.expander("⚙️ Code", expanded=st.session_state["show_code"]):
             st.selectbox(
                 "Template", list(PRESETS), key=f"preset_{i}",
@@ -500,13 +534,13 @@ for i, column in enumerate(columns):
             )
             st.text_area("Code", key=f"code_{i}", height=260, label_visibility="collapsed")
 
-        with st.container(height=460, border=True):
+        with st.container(height=chat_height, border=True):
             for msg in history(i):
                 with st.chat_message(msg["role"]):
                     st.markdown(msg["content"])
                     if msg.get("elapsed"):
                         st.caption(f"⏱ {msg['elapsed']:.2f}s")
-            if pending:
+            if pending and i in targets:
                 with st.chat_message("assistant"):
                     placeholders[i] = st.empty()
 
